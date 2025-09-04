@@ -78,7 +78,10 @@ func (s *Server) getHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]any{"value": string(pt), "version": v.VersionID})
 }
 
-type grpcSvc struct{ srv *Server }
+type grpcSvc struct{
+	srv *Server
+	apiv1.UnimplementedSecretsServer
+}
 
 func (g *grpcSvc) Put(ctx context.Context, in *apiv1.PutRequest) (*apiv1.PutResponse, error) {
 	ct, wdek, kid, err := g.srv.Env.Encrypt([]byte(in.Value))
