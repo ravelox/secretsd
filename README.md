@@ -1,0 +1,2 @@
+# secretsd
+Basic secrets manager
