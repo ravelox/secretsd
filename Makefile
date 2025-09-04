@@ -1,18 +1,22 @@
 SHELL:=/bin/bash
 
-.PHONY: all deps proto server csi ctl
-all: deps proto server csi ctl
+.PHONY: all deps proto server csi ctl tidy
+# Generate stubs first so imports exist, then download deps, then build
+all: proto deps server csi ctl
 
+# Only download modules here; run `make tidy` after proto if you want to re-prune
 deps:
-	@echo "==> Ensuring Go deps (go.mod/go.sum)"
-	@go mod tidy
+	@echo "==> Downloading Go deps (without scanning missing imports)"
 	@go mod download
+
+tidy:
+	@echo "==> go mod tidy"
+	@go mod tidy
 
 proto:
 	rm -rf api/gen
 	mkdir -p api/gen
 	protoc -I api --go_out=api/gen --go-grpc_out=api/gen api/secrets.proto
-
 
 server:
 	@go build -o bin/secretsd ./cmd/secretsd
