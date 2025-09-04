@@ -70,3 +70,7 @@ This will invoke `protoc` once `.proto` files are added under `api/` and generat
 
 
 > **Note:** This repo uses a placeholder module path `github.com/yourname/secretsd`. Update `go.mod` to your actual repo path (e.g. `github.com/<you>/secretsd`) and run `go mod tidy`.
+
+
+> **Local build note:** `go.mod` includes `replace github.com/yourname/secretsd => .` so you can build before pushing to GitHub. 
+> When you publish the repo under your own path, update `module` and `option go_package` accordingly and remove the `replace`.
