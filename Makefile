@@ -17,7 +17,7 @@ tidy:
 proto:
 	rm -rf api/gen
 	mkdir -p api/gen
-	protoc -I api --go_out=api/gen --go-grpc_out=api/gen api/secrets.proto
+	protoc -I api --go_out=paths=source_relative:api/gen --go-grpc_out=paths=source_relative:api/gen api/secrets.proto
 
 server:
 	@go build -o bin/secretsd ./cmd/secretsd
