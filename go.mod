@@ -7,4 +7,6 @@ require (
 )
 
 
+replace github.com/yourname/secretsd => .
+
 replace github.com/ravelox/secretsd => .

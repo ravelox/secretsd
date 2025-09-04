@@ -12,10 +12,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	v1 "github.com/yourname/secretsd/api/gen/secretsd/v1"
-	"github.com/yourname/secretsd/internal/crypto"
-	"github.com/yourname/secretsd/internal/crypto/kek"
-	"github.com/yourname/secretsd/internal/storage"
+	v1 "github.com/ravelox/secretsd/api/gen/secretsd/v1"
+	"github.com/ravelox/secretsd/internal/crypto"
+	"github.com/ravelox/secretsd/internal/crypto/kek"
+	"github.com/ravelox/secretsd/internal/storage"
 )
 
 type Server struct {

@@ -74,3 +74,7 @@ This will invoke `protoc` once `.proto` files are added under `api/` and generat
 
 > **Local build note:** `go.mod` includes `replace github.com/yourname/secretsd => .` so you can build before pushing to GitHub. 
 > When you publish the repo under your own path, update `module` and `option go_package` accordingly and remove the `replace`.
+
+
+> **Module path set**: This bundle is configured for `github.com/ravelox/secretsd`.
+> If you publish under a different path, update `go.mod` and `api/secrets.proto` (go_package), then run `go mod tidy && make proto`.
