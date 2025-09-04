@@ -1,4 +1,4 @@
-module secretsd
+module github.com/yourname/secretsd
 
 go 1.22
 

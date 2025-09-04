@@ -12,10 +12,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	v1 "secretsd/api/gen/secretsd/v1"
-	"secretsd/internal/crypto"
-	"secretsd/internal/crypto/kek"
-	"secretsd/internal/storage"
+	v1 "github.com/yourname/secretsd/api/gen/secretsd/v1"
+	"github.com/yourname/secretsd/internal/crypto"
+	"github.com/yourname/secretsd/internal/crypto/kek"
+	"github.com/yourname/secretsd/internal/storage"
 )
 
 type Server struct {

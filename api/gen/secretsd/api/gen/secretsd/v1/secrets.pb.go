@@ -4,7 +4,7 @@
 // 	protoc        v6.32.0
 // source: secrets.proto
 
-package gen
+package v1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -241,7 +241,7 @@ const file_secrets_proto_rawDesc = "" +
 	"\aversion\x18\x02 \x01(\tR\aversion2}\n" +
 	"\aSecrets\x128\n" +
 	"\x03Put\x12\x17.secretsd.v1.PutRequest\x1a\x18.secretsd.v1.PutResponse\x128\n" +
-	"\x03Get\x12\x17.secretsd.v1.GetRequest\x1a\x18.secretsd.v1.GetResponseB\x16Z\x14secretsd/api/gen;genb\x06proto3"
+	"\x03Get\x12\x17.secretsd.v1.GetRequest\x1a\x18.secretsd.v1.GetResponseB!Z\x1fsecretsd/api/gen/secretsd/v1;v1b\x06proto3"
 
 var (
 	file_secrets_proto_rawDescOnce sync.Once

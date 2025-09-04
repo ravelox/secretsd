@@ -67,3 +67,6 @@ make proto
 ```
 
 This will invoke `protoc` once `.proto` files are added under `api/` and generate Go stubs.
+
+
+> **Note:** This repo uses a placeholder module path `github.com/yourname/secretsd`. Update `go.mod` to your actual repo path (e.g. `github.com/<you>/secretsd`) and run `go mod tidy`.
