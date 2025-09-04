@@ -1,3 +1,4 @@
+
 package main
 
 import (
@@ -11,7 +12,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"secretsd/api/gen/secretsd/v1"
+	apiv1 "secretsd/api/gen"
 	"secretsd/internal/crypto"
 	"secretsd/internal/crypto/kek"
 	"secretsd/internal/storage"
@@ -51,7 +52,7 @@ func main() {
 	lis, err := net.Listen("tcp", grpcAddr)
 	if err != nil { log.Fatalf("grpc listen: %v", err) }
 	gs := grpc.NewServer()
-	v1.RegisterSecretsServer(gs, &grpcSvc{srv: s})
+	apiv1.RegisterSecretsServer(gs, &grpcSvc{srv: s})
 	log.Printf("gRPC listening on %s", grpcAddr)
 	log.Fatal(gs.Serve(lis))
 }
@@ -79,20 +80,20 @@ func (s *Server) getHandler(w http.ResponseWriter, r *http.Request) {
 
 type grpcSvc struct{ srv *Server }
 
-func (g *grpcSvc) Put(ctx context.Context, in *v1.PutRequest) (*v1.PutResponse, error) {
+func (g *grpcSvc) Put(ctx context.Context, in *apiv1.PutRequest) (*apiv1.PutResponse, error) {
 	ct, wdek, kid, err := g.srv.Env.Encrypt([]byte(in.Value))
 	if err != nil { return nil, err }
 	ver, err := g.srv.Store.Put(in.Path, storage.SecretVersion{Ciphertext: ct, WrappedDEK: wdek, KEKID: kid})
 	if err != nil { return nil, err }
-	return &v1.PutResponse{Version: ver}, nil
+	return &apiv1.PutResponse{Version: ver}, nil
 }
 
-func (g *grpcSvc) Get(ctx context.Context, in *v1.GetRequest) (*v1.GetResponse, error) {
+func (g *grpcSvc) Get(ctx context.Context, in *apiv1.GetRequest) (*apiv1.GetResponse, error) {
 	v, err := g.srv.Store.Get(in.Path, in.Version)
 	if err != nil { return nil, err }
 	pt, err := g.srv.Env.Decrypt(v.Ciphertext, v.WrappedDEK, v.KEKID)
 	if err != nil { return nil, err }
-	return &v1.GetResponse{Value: string(pt), Version: v.VersionID}, nil
+	return &apiv1.GetResponse{Value: string(pt), Version: v.VersionID}, nil
 }
 
 func writeJSON(w http.ResponseWriter, v any) { w.Header().Set("Content-Type", "application/json"); _ = json.NewEncoder(w).Encode(v) }
