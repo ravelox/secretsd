@@ -4,8 +4,8 @@ SHELL:=/bin/bash
 all: proto server csi ctl
 
 proto:
-	@echo "(stub) add protoc in your env to generate gRPC stubs"
-	@echo "proto generation skipped in this minimal bundle"
+	protoc -I api --go_out=api/gen --go-grpc_out=api/gen api/secrets.proto
+
 
 server:
 	@go build -o bin/secretsd ./cmd/secretsd
