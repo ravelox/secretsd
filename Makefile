@@ -1,12 +1,13 @@
 SHELL:=/bin/bash
 
 .PHONY: all deps proto server csi ctl tidy
-# Generate stubs first so imports exist, then download deps, then build
+# Generate stubs first so imports exist, then tidy/download deps, then build
 all: proto deps server csi ctl
 
-# Only download modules here; run `make tidy` after proto if you want to re-prune
 deps:
-	@echo "==> Downloading Go deps (without scanning missing imports)"
+	@echo "==> go mod tidy (post-proto)"
+	@go mod tidy
+	@echo "==> go mod download"
 	@go mod download
 
 tidy:
