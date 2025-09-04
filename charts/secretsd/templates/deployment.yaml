@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "secretsd.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "secretsd.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: { app.kubernetes.io/name: {{ include "secretsd.name" . }} }
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "secretsd.name" . }}
+{{- with .Values.serviceAccount.podLabels }}
+{{ toYaml . | nindent 8 }}
+{{- end }}
+    spec:
+      serviceAccountName: {{ default (include "secretsd.fullname" .) .Values.serviceAccount.name }}
+      containers:
+      - name: secretsd
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports: [{ containerPort: 8080, name: http }]
+        env:
+        - name: PG_DSN
+          value: {{ .Values.postgres.dsn | quote }}
+        - name: KEK_FILE
+          value: "/kek/{{ .Values.kek.secretKey }}"
+        volumeMounts:
+        - name: kek
+          mountPath: /kek
+          readOnly: true
+        livenessProbe: { httpGet: { path: /v1/get?key=healthz, port: http }, initialDelaySeconds: 10, periodSeconds: 10 }
+        readinessProbe: { httpGet: { path: /v1/get?key=healthz, port: http }, initialDelaySeconds: 5, periodSeconds: 5 }
+      volumes:
+      - name: kek
+        secret:
+          secretName: {{ .Values.kek.secretName }}

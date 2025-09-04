@@ -1,0 +1,9 @@
+secretsd installed.
+
+1) Create a KEK Secret (for file KEK mode):
+   kubectl -n {{ .Release.Namespace }} create secret generic {{ .Values.kek.secretName }}      --from-file={{ .Values.kek.secretKey }}=./kek.bin
+
+2) Port-forward and smoke test:
+   kubectl -n {{ .Release.Namespace }} port-forward deploy/{{ include "secretsd.fullname" . }} 8080:8080
+   curl -sS -X POST localhost:8080/v1/put -H 'content-type: application/json' -d '{"path":"db/password","value":"secret"}'
+   curl -sS 'http://localhost:8080/v1/get?key=db/password'

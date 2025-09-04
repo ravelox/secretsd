@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: secretsd-pg
+    environment:
+      POSTGRES_USER: secretsd
+      POSTGRES_PASSWORD: secretsd
+      POSTGRES_DB: secretsd
+    ports: ["5432:5432"]
+    volumes: [ "pgdata:/var/lib/postgresql/data" ]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "secretsd"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  adminer:
+    image: adminer:4
+    container_name: secretsd-adminer
+    depends_on: [ db ]
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports: ["8088:8080"]
+volumes:
+  pgdata:

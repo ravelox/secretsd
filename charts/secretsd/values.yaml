@@ -1,0 +1,34 @@
+image:
+  repository: ghcr.io/OWNER/secretsd
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+replicaCount: 2
+
+postgres:
+  dsn: "postgres://secretsd:secretsd@secretsd-postgres.secretsd.svc:5432/secretsd?sslmode=disable"
+
+kek:
+  source: secret
+  secretName: secretsd-kek
+  secretKey: kek.bin
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  podLabels: {}
+
+csiProvider:
+  enabled: false
+  image: ghcr.io/OWNER/csi-provider:latest
+  env: {}
+
+eso:
+  enabled: false
+
+resources: {}

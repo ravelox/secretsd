@@ -1,0 +1,64 @@
+name: release-chart
+on:
+  push:
+    tags: [ 'v*.*.*' ]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  CHART_DIR: charts/secretsd
+  OCI_REPO: ghcr.io
+
+jobs:
+  oci-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with: { version: v3.15.2 }
+      - uses: sigstore/cosign-installer@v3
+        with: { cosign-release: 'v2.2.4' }
+      - name: Compute version
+        id: v
+        run: |
+          RAW="${GITHUB_REF_NAME}"
+          VER="${RAW#v}"
+          echo "ver=${VER}" >> $GITHUB_OUTPUT
+      - name: Import GPG key for Helm provenance
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          KEYID=$(gpg --list-secret-keys --keyid-format LONG | grep -Eo '[0-9A-F]{16,}' | head -n1)
+          echo "KEYID=$KEYID" >> $GITHUB_ENV
+          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+          echo "passphrase=$GPG_PASSPHRASE" >> ~/.gnupg/pass.txt
+      - run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.OCI_REPO }} --username ${{ github.actor }} --password-stdin
+      - run: helm lint "$CHART_DIR"
+      - name: Package chart with provenance
+        run: |
+          mkdir -p dist
+          helm package "$CHART_DIR"             --version "${{ steps.v.outputs.ver }}"             --app-version "${{ steps.v.outputs.ver }}"             --sign --key "$KEYID" --keyring ~/.gnupg/pubring.kbx             --passphrase-file ~/.gnupg/pass.txt             --destination dist
+      - name: Push chart to GHCR (OCI)
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          CHART_TGZ=$(ls dist/*.tgz)
+          helm push "$CHART_TGZ" oci://ghcr.io/${OWNER_LC}/charts
+      - name: Push provenance (.prov) to GHCR
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          CHART_TGZ=$(ls dist/*.tgz)
+          helm push-provenance "$CHART_TGZ" oci://ghcr.io/${OWNER_LC}/charts
+      - name: Cosign sign the released OCI artifact (tag)
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REF=ghcr.io/${OWNER_LC}/charts/secretsd:${{ steps.v.outputs.ver }}
+          echo "$COSIGN_PRIVATE_KEY" > cosign.key
+          cosign sign --key cosign.key "$REF" -y
