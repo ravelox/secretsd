@@ -1,9 +1,16 @@
 SHELL:=/bin/bash
 
-.PHONY: all proto server csi esowebhook ctl
-all: proto server csi ctl
+.PHONY: all deps proto server csi ctl
+all: deps proto server csi ctl
+
+deps:
+	@echo "==> Ensuring Go deps (go.mod/go.sum)"
+	@go mod tidy
+	@go mod download
 
 proto:
+	rm -rf api/gen
+	mkdir -p api/gen
 	protoc -I api --go_out=api/gen --go-grpc_out=api/gen api/secrets.proto
 
 
