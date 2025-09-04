@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
 	"os"
 
+	"google.golang.org/grpc"
+
+	"secretsd/api/gen/secretsd/v1"
 	"secretsd/internal/crypto"
 	"secretsd/internal/crypto/kek"
 	"secretsd/internal/storage"
@@ -29,12 +34,26 @@ func main() {
 	defer func(db *sql.DB){ _ = db.Close() }(store.UnderlyingDB())
 
 	s := &Server{Store: store, Env: envlp}
+
+	// HTTP mux
 	http.HandleFunc("/v1/put", s.putHandler)
 	http.HandleFunc("/v1/get", s.getHandler)
 
+	// Start HTTP
 	addr := env("ADDR", ":8080")
-	log.Printf("secretsd listening on %s  KEK=%s  PG=%s", addr, kekFile, dsn)
-	log.Fatal(http.ListenAndServe(addr, nil))
+	go func() {
+		log.Printf("HTTP listening on %s", addr)
+		log.Fatal(http.ListenAndServe(addr, nil))
+	}()
+
+	// Start gRPC
+	grpcAddr := env("GRPC_ADDR", ":8081")
+	lis, err := net.Listen("tcp", grpcAddr)
+	if err != nil { log.Fatalf("grpc listen: %v", err) }
+	gs := grpc.NewServer()
+	v1.RegisterSecretsServer(gs, &grpcSvc{srv: s})
+	log.Printf("gRPC listening on %s", grpcAddr)
+	log.Fatal(gs.Serve(lis))
 }
 
 func (s *Server) putHandler(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +75,24 @@ func (s *Server) getHandler(w http.ResponseWriter, r *http.Request) {
 	pt, err := s.Env.Decrypt(v.Ciphertext, v.WrappedDEK, v.KEKID)
 	if err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
 	writeJSON(w, map[string]any{"value": string(pt), "version": v.VersionID})
+}
+
+type grpcSvc struct{ srv *Server }
+
+func (g *grpcSvc) Put(ctx context.Context, in *v1.PutRequest) (*v1.PutResponse, error) {
+	ct, wdek, kid, err := g.srv.Env.Encrypt([]byte(in.Value))
+	if err != nil { return nil, err }
+	ver, err := g.srv.Store.Put(in.Path, storage.SecretVersion{Ciphertext: ct, WrappedDEK: wdek, KEKID: kid})
+	if err != nil { return nil, err }
+	return &v1.PutResponse{Version: ver}, nil
+}
+
+func (g *grpcSvc) Get(ctx context.Context, in *v1.GetRequest) (*v1.GetResponse, error) {
+	v, err := g.srv.Store.Get(in.Path, in.Version)
+	if err != nil { return nil, err }
+	pt, err := g.srv.Env.Decrypt(v.Ciphertext, v.WrappedDEK, v.KEKID)
+	if err != nil { return nil, err }
+	return &v1.GetResponse{Value: string(pt), Version: v.VersionID}, nil
 }
 
 func writeJSON(w http.ResponseWriter, v any) { w.Header().Set("Content-Type", "application/json"); _ = json.NewEncoder(w).Encode(v) }

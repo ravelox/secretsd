@@ -29,3 +29,41 @@ helm upgrade --install secretsd ./charts/secretsd -n secretsd --create-namespace
 - `.github/workflows/release-chart.yaml` packages the chart on tags, pushes to GHCR (OCI), and signs (Helm provenance + Cosign).
 
 See `charts/secretsd/NOTES.txt` for smoke test commands after install.
+
+
+## Development setup
+
+The `Makefile` includes a `proto` target with a message:
+
+```
+(stub) add protoc in your env to generate gRPC stubs
+```
+
+If you plan to implement gRPC APIs (e.g. CSI provider, KMS plugin), you need the Protocol Buffers compiler and Go plugins:
+
+```bash
+# Install protoc (ensure version >= 3.20)
+# On macOS (Homebrew):
+brew install protobuf
+
+# On Ubuntu/Debian:
+sudo apt-get install -y protobuf-compiler
+
+# Verify installation
+protoc --version
+
+# Install Go plugins
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+# Make sure $GOPATH/bin is in your PATH
+export PATH="$PATH:$(go env GOPATH)/bin"
+```
+
+Then you can run:
+
+```bash
+make proto
+```
+
+This will invoke `protoc` once `.proto` files are added under `api/` and generate Go stubs.
